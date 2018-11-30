@@ -1,6 +1,5 @@
 library(dendextend)
 #Compare Albert's above and belowground metabolite clustering results
-setwd("~/Documents/iPASS/Manuscripts/GoBrachy MS1/Code/")
 above <- read.csv("DistanceMatrix_Aboveground_GenotypeAverages.csv")
 rownames(above) <- colnames(above)[-1]
 names <- rownames(above)

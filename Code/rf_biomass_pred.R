@@ -1,4 +1,4 @@
-###------ Most of this code was taken from ~/Documents/iPASS/gobrachy/Code/var_selection_rf.R 
+
 library(dplyr)
 library(caret)
 ##----------------------------------------------------##
@@ -164,11 +164,11 @@ layout_mat <- rbind(c(1,1,1,1,3,3),
                     c(2,2,2,2,3,3))
 
 gridExtra::grid.arrange(p1,p2,p3,layout_matrix=layout_mat)
-#ggsave(filename = paste0("~/Documents/iPASS/Manuscripts/GoBrachy MS1/Figures/RF_results_",response,".pdf"),plot = gridExtra::grid.arrange(p1,p2,p3,layout_matrix=layout_mat))
+#ggsave(filename = paste0("RF_results_",response,".pdf"),plot = gridExtra::grid.arrange(p1,p2,p3,layout_matrix=layout_mat))
 
 #Save "all_imports" object
 all_imports$Tissue <- response
-save(all_imports, file = paste0("~/Documents/iPASS/Manuscripts/GoBrachy MS1/Results/",response,"_RF_Results.RData"))
+save(all_imports, file = paste0("Results/",response,"_RF_Results.RData"))
 
 
 all_imports$ConRank <- rank(-all_imports$Control)
@@ -179,7 +179,7 @@ most_imports <- all_imports[unique(c(which(all_imports$ConRank<=20), which(all_i
 most_imports <- most_imports%>%select(-Control,-Drought)%>%arrange(ConRank)
 bottom_rank <- c(1:20,20+order(most_imports$DrRank[-c(1:20)]))
 
-#write.csv(most_imports[bottom_rank,],"~/Desktop/Ranked_Metabs.csv",row.names = FALSE)
+#write.csv(most_imports[bottom_rank,],"Results/Ranked_Metabs.csv",row.names = FALSE)
 
 
 
