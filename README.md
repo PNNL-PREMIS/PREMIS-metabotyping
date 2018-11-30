@@ -1,2 +1,2 @@
-# PREMIS-metabotyping
-Code to accompany a manuscript that is currently in revision
+# metabotyping
+Code to accompany manuscript under review
