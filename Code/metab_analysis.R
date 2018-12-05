@@ -17,7 +17,6 @@ theme_hm <- function(col=NULL){
 }
 
 #Read in metab and phenotype data
-setwd("~/Documents/iPASS/gobrachy/")
 geno_data <- data.table::fread("Data/GoBrachy_LCMS_GCMS_DATASET_July_27_2017.csv",data.table=FALSE)
 #pheno_data <- data.table::fread("Data/Cleand_GoBrachy_Data.csv",data.table=FALSE)
 
@@ -40,7 +39,7 @@ geno_data <- data.table::fread("Data/GoBrachy_LCMS_GCMS_DATASET_July_27_2017.csv
 colnames(geno_data)[grep("Unknown",colnames(geno_data))] <- paste("Unknown",1:length(grep("Unknown",colnames(geno_data))),sep="_")
 
 #Select "Roots" or "Above" (aka leaves)
-org <- "Roots"
+org <- "Above"
 geno_data <- dplyr::filter(geno_data,Organ==org)
 if(org=="Above"){
   org <- "Leaves"
@@ -114,16 +113,16 @@ ggplot(data=comp_df_melt,aes(Comparison,Count,fill=Direction))+geom_bar(stat='id
   theme(axis.text.x=element_text(angle=40,vjust=1,hjust=.9,size=7),axis.text=element_text(colour='black'))+
   scale_fill_manual("",values=c("#4DBBD5FF","#F39B7FFF"),labels=c("More in Drought","Less in Drought"))+
   xlab("")+ylab("Number of Statistically\nSignificant Metabolites")+ylim(c(-200,200))
-#ggsave(paste0("~/Documents/iPASS/Manuscripts/GoBrachy MS1/Figures/",org,"_Number_Different.png"),width=6,height=3.75)
 fig_id <- ifelse(org=="Roots","B","A")
-#ggsave(paste0("/Volumes/Genotrait/GoBrachy MS1/Manu_Figures/Extended_Data_Fig4",fig_id,".eps"),width=7,height=4.375)
+#ggsave(paste0("Extended_Data_Fig4",fig_id,".eps"),width=7,height=4.375)
 
 
-##------------------------------------------------##
-##------------ Full heat map (control means)  ----##
-##------------------------------------------------##
+##----------------------------------------------------------------##
+##------------ Full heat map (control means)  --------------------##
+##-----------  These are the heamaps published on the shiny app --##
+##----------------------------------------------------------------##
 
-line_names <- read.csv("~/Documents/iPASS/gobrachy/Data/GoBrachy_30_lines.csv",header=FALSE)
+line_names <- read.csv("Data/GoBrachy_30_lines.csv",header=FALSE)
 metab_means <- gob_res$Full_results
 fc_cols <- c(1,grep("Mean_W",colnames(metab_means)))
 metab_means <- metab_means[,fc_cols]
@@ -153,17 +152,7 @@ metab_means_melt <- melt(metab_means,id.vars=c("Metabolites"),variable.name='Acc
 metab_means_melt$Accession <- factor(metab_means_melt$Accession,levels=access_order)
 metab_means_melt$Metabolites <- factor(metab_means_melt$Metabolites,levels=matab_order)
 
-#Make the plot
-qplot(Accession,Metabolites,fill=value,data=metab_means_melt,geom='raster')+
-  scale_fill_gradient2(midpoint=15,low="#003366",high="#990000")+coord_fixed(1/60)+
-  theme(axis.text = element_text(color="Black",size=7),axis.text.y=element_blank())+
-  labs(fill="Log\nabundance")+theme_hm(col='white')+ggtitle(org)+theme(plot.title=element_text(face='bold'))
-#ggsave(paste0("~/Documents/iPASS/Manuscripts/GoBrachy MS1/Figures/control_heatmap_",org,".png"),width=5.5,height=4.5)
-#Save metab_means_melt for shiny app
-#save(metab_means_melt,file = "~/Documents/iPASS/Manuscripts/GoBrachy MS1/ShinyApp/leaves_data.RData")
-
 #Try heatmaply
-setwd("~/Documents/iPASS/Manuscripts/GoBrachy MS1/Figures/")
 library(heatmaply)
 rownames(metab_means) <- metab_means$Metabolites
 tmp <- heatmaply(metab_means[,-1],scale_fill_gradient_fun=
@@ -183,125 +172,14 @@ tmp <- heatmaply(metab_means_std,scale_fill_gradient_fun=
 rm(tmp)
 
 
-#Try Albert's standardization idea
-metab_means_std <- t(apply(metab_means[,-1],1,function(x)return(x/max(abs(x)))))
-
-#Cluster based on standardized results
-std_cl_metab_clusts <- hclust(dist(data.matrix(metab_means_std)),method='ward.D')
-std_metab_order <- metab_means$Metabolites[cl_metab_clusts$order]
-std_cl_access_clusts <- hclust(dist(t(data.matrix(metab_means_std))),method='ward.D')
-std_access_order <- colnames(metab_means[,-1])[std_cl_access_clusts$order]
-
-metab_means_std <- data.frame(Metabolites=metab_means$Metabolites,metab_means_std)
-colnames(metab_means_std)[-1] <- colnames(metab_means[,-1])
-
-metab_means_std_melt <- melt(metab_means_std,id.vars=c("Metabolites"),variable.name='Accession')
-metab_means_std_melt <- merge(metab_means_std_melt,sig_mat)
-
-metab_means_std_melt$Metabolites <- factor(metab_means_std_melt$Metabolites, levels=std_metab_order)
-metab_means_std_melt$Accession <- factor(metab_means_std_melt$Accession, levels=std_access_order)
-
-#make the plot
-qplot(Accession,Metabolites,fill=value,data=metab_means_std_melt,geom='raster')+scale_fill_gradient2(midpoint=.5)+
-  theme(axis.text = element_text(face="bold", color="Black"))+labs(fill="Scaled log\nabundance")+theme_hm(col='white')+
-  theme(axis.text.y=element_blank())+ggtitle(org)
-#ggsave(paste0("~/Documents/iPASS/Manuscripts/GoBrachy MS1/Figures/control_heatmap_",org,"albert.png"),width=5.5,height=4.5)
-#Save metab_means_melt for shiny app
-#save(metab_means_std_melt,file = "~/Documents/iPASS/Manuscripts/GoBrachy MS1/ShinyApp/roots_data_scaled.RData")
-
-
-
-
-##------------------------------------------------##
-##------------ Full heat map (diff expression)  --##
-##------------------------------------------------##
-
-line_names <- read.csv("~/Documents/iPASS/gobrachy/Data/GoBrachy_30_lines.csv",header=FALSE)
-metab_res <- gob_res$Full_results
-fc_cols <- c(1,grep("Fold_change",colnames(metab_res)))
-metab_res <- metab_res[,fc_cols]
-colnames(metab_res)[-1] <- paste(line_names$V2,org)
-#write.csv(metab_res,"~/Desktop/Leaf_Metabolites.csv")
-
-#Filter to three interesting lines
-library(reshape2)
-library(dplyr)
-colnames(metab_res)[-1] <- as.character(line_names$V2)
-#metab_res <- metab_res[-grep("Unknown",metab_res$Metabolites),]
-#metab_res$Metabolites <- factor(metab_res$Metabolites)
-
-#Remove meatbolites with missing data
-na_rows <- unname(which(apply(apply(metab_res[,-1],1,is.na),2,any)))
-metab_res <- metab_res[-na_rows,]
-
-#Cluster to organize rows
-cl_metab_clusts <- hclust(dist(data.matrix(metab_res[,-c(1)])),method='ward.D')
-matab_order <- metab_res$Metabolites[cl_metab_clusts$order]
-
-#Cluster to organize the columns
-cl_access_clusts <- hclust(dist(t(data.matrix(metab_res[,-c(1)]))),method='ward.D')
-access_order <- colnames(metab_res[,-1])[cl_access_clusts$order]
-
-metab_res_melt <- melt(metab_res,id.vars=c("Metabolites"),variable.name='Accession')
-#Denote stat significant ones?
-#Sig identifiers
-sig_mat <- gob_res$Flags
-sig_mat <- filter(sig_mat,Metabolites%in%metab_res_melt$Metabolites)
-sig_mat <- melt(sig_mat,id.vars=c("Metabolites"),variable.name='Accession',value.name="Sig")
-#sig_mat <- sig_mat[c(grep("Bd21$",sig_mat$Accession),grep("Bd1_1",sig_mat$Accession),grep("Mon3",sig_mat$Accession)),]
-sig_mat$Accession <- factor(sig_mat$Accession,labels=levels(line_names$V2))
-metab_res_melt <- merge(metab_res_melt,sig_mat)
-metab_res_melt$Accession <- factor(metab_res_melt$Accession,levels=access_order)
-metab_res_melt$Metabolites <- factor(metab_res_melt$Metabolites,levels=matab_order)
-
-#Make the plot
-qplot(Accession,Metabolites,fill=value,data=metab_res_melt,geom='raster')+scale_fill_gradient2()+
-  theme(axis.text = element_text(face="bold", color="Black"))+labs(fill="Log\nfold change")+theme_hm(col='white')+
-  theme(axis.text.y=element_blank())+
-  geom_tile(aes(x=Accession,y=Metabolites),data=filter(metab_res_melt,abs(Sig)>0),colour='yellow',size=1.5)+
-  ggtitle(org)
-#ggsave(paste0("~/Documents/iPASS/Manuscripts/GoBrachy MS1/Figures/mini_heatmap_",org,".png"),width=6.5,height=9.32)
-
-#Write to CSV
-#write.csv(metab_res,paste0("~/Documents/iPASS/Manuscripts/GoBrachy MS1/Tables/Diff_Abundance_Table_",org,".csv"),row.names = FALSE)
-
-#Try Albert's standardization idea
-metab_res_std <- t(apply(metab_res[,-1],1,function(x)return(x/max(abs(x)))))
-
-#Cluster based on standardized results
-std_cl_metab_clusts <- hclust(dist(data.matrix(metab_res_std)),method='ward.D')
-std_metab_order <- metab_res$Metabolites[cl_metab_clusts$order]
-std_cl_access_clusts <- hclust(dist(t(data.matrix(metab_res_std))),method='ward.D')
-std_access_order <- colnames(metab_res[,-1])[std_cl_access_clusts$order]
-
-metab_res_std <- data.frame(Metabolites=metab_res$Metabolites,metab_res_std)
-colnames(metab_res_std)[-1] <- colnames(metab_res[,-1])
-
-metab_res_std_melt <- melt(metab_res_std,id.vars=c("Metabolites"),variable.name='Accession')
-metab_res_std_melt <- merge(metab_res_std_melt,sig_mat)
-
-metab_res_std_melt$Metabolites <- factor(metab_res_std_melt$Metabolites, levels=std_metab_order)
-metab_res_std_melt$Accession <- factor(metab_res_std_melt$Accession, levels=std_access_order)
-
-#make the plot
-qplot(Accession,Metabolites,fill=value,data=metab_res_std_melt,geom='raster')+scale_fill_gradient2()+
-  theme(axis.text = element_text(face="bold", color="Black"))+labs(fill="Scaled log\nfold change")+theme_hm(col='white')+
-  theme(axis.text.y=element_blank())+
-  #geom_hline(aes(yintercept=y),data=ylines_df,colour='gray75',size=.2)+
-  #geom_vline(aes(xintercept=x),data=xlines_df,colour='gray75',size=.2)+coord_fixed(ratio=1/2)+
-  geom_tile(aes(x=Accession,y=Metabolites),data=filter(metab_res_std_melt,abs(Sig)>0),colour='yellow')+
-  ggtitle(org)
-
 
 ##------------------------------------------------##
 ##------------ interesting lines only
 ##------------------------------------------------##
-line_names <- read.csv("~/Documents/iPASS/gobrachy/Data/GoBrachy_30_lines.csv",header=FALSE)
 metab_res <- gob_res$Full_results
 fc_cols <- c(1,grep("Fold_change",colnames(metab_res)))
 metab_res <- metab_res[,fc_cols]
 colnames(metab_res)[-1] <- paste(line_names$V2,org)
-#write.csv(metab_res,"~/Desktop/Leaf_Metabolites.csv")
 
 #Filter to  interesting lines
 library(reshape2)
@@ -321,47 +199,28 @@ if(length(na_rows)>0){
 cl_metab_clusts <- hclust(dist(data.matrix(metab_res[,-c(1)])),method='ward.D')
 metab_res$Metabolites <- factor(metab_res$Metabolites,levels=metab_res$Metabolites[cl_metab_clusts$order])
 
-##Keep top 50 rows based on largest range in values
-#lranges <- unname(apply(apply(metab_res[,-1],1,range),2,diff))
-#metab_keeps <- order(lranges,decreasing = TRUE)[1:30]
-#metab_res <- metab_res[metab_keeps,]
-
-#Keep all metabs that are significant for atleast one line
-metab_keeps <- filter(sig_mat,Sig==1)$Metabolites
-metab_keeps <- factor(metab_keeps[-grep("unknown",metab_keeps,ignore.case = TRUE)])
-metab_res <- metab_res[metab_keeps,]
-
-
+#Denote stat significant ones?
 metab_res_melt <- melt(metab_res,id.vars=c("Metabolites"),variable.name='Accession')
 xlines_df <- data.frame(x=.5+0:length(unique(metab_res_melt$Accession)))
 ylines_df <- data.frame(y=.5+0:length(unique(metab_res_melt$Metabolites)))
-#Denote stat significant ones?
 #Sig identifiers
 sig_mat <- gob_res$Flags
 sig_mat <- filter(sig_mat,Metabolites%in%metab_res_melt$Metabolites)
 sig_mat <- melt(sig_mat,id.vars=c("Metabolites"),variable.name='Accession',value.name="Sig")
 rows <- NULL
-#int_lines_mod <- c("Bd21$","Mon3","Adi_2","Arn1","BdTR1i","Per_1")
-#for(i in int_lines_mod){
-#  rows <- c(rows,grep(i,sig_mat$Accession))
-#}
-#sig_mat <- sig_mat[c(grep("Bd21$",sig_mat$Accession),grep("Bd1_1",sig_mat$Accession),grep("Mon3",sig_mat$Accession)),]
-#sig_mat <- sig_mat[rows,]
 sig_mat$Accession <- factor(sig_mat$Accession,labels=int_lines)
 metab_res_melt <- merge(metab_res_melt,sig_mat)
+
+#Keep all metabs that are significant for atleast one line
+metab_keeps <- filter(sig_mat,Sig==1)$Metabolites
+metab_keeps <- factor(metab_keeps)
+metab_res <- metab_res[metab_keeps,]
+
 
 #Abbreviate the metabolite names (only take those before ";")
 to_abbrev <- grep(";",levels(metab_res_melt$Metabolites))
 levels(metab_res_melt$Metabolites)[to_abbrev] <- gsub(";.*$","",levels(metab_res_melt$Metabolites)[to_abbrev])
 levels(metab_res_melt$Metabolites) <- tolower(levels(metab_res_melt$Metabolites))
-#Make the plot
-qplot(Accession,Metabolites,fill=value,data=metab_res_melt,geom='raster')+scale_fill_gradient2()+
-  theme(axis.text = element_text(face="bold", color="Black"))+labs(fill="Log\nfold change")+theme_hm(col='white')+
-  geom_hline(aes(yintercept=y),data=ylines_df,colour='gray75',size=.2)+
-  geom_vline(aes(xintercept=x),data=xlines_df,colour='gray75',size=.2)+coord_fixed(ratio=1/2)+
-  geom_tile(aes(x=Accession,y=Metabolites),data=filter(metab_res_melt,abs(Sig)>0),colour='yellow',size=1.5)+
-  ggtitle(org)
-#ggsave(paste0("~/Documents/iPASS/Manuscripts/GoBrachy MS1/Figures/mini_heatmap_",org,".png"),width=6.5,height=9.32)
 
 #Try Albert's standardization idea
 metab_res_std <- metab_res[,-1]
@@ -382,6 +241,14 @@ levels(metab_res_std_melt$Metabolites) <- tolower(levels(metab_res_std_melt$Meta
 
 metab_res_std_melt$Metabolites <- gsub("1-aminocyclopropane-1-carboxylic acid","1-aminocyclopropane",metab_res_std_melt$Metabolites)
 
+if(org=="Roots"){
+  org2 <- "Belowground"
+  ht <- 8
+}else{
+  org2 <- "Aboveground"
+  ht <- 6
+}
+
 #make the plot
 sig_metabs <- filter(metab_res_std_melt,abs(Sig)>0)
 sig_metabs <- sig_metabs$Metabolites
@@ -391,18 +258,8 @@ qplot(Accession,Metabolites,fill=value,data=metab_res_std_melt_sub,geom='raster'
   geom_hline(aes(yintercept=y),data=ylines_df,colour='gray75',size=.2)+
   geom_vline(aes(xintercept=x),data=xlines_df,colour='gray75',size=.2)+coord_fixed(ratio=1)+
   geom_tile(aes(x=Accession,y=Metabolites),data=filter(metab_res_std_melt,abs(Sig)>0),colour='yellow',size=1.5)+
-  ggtitle(org)+theme(plot.title=element_text(face='bold',size=15))
-ggsave(paste0("~/Documents/iPASS/Manuscripts/GoBrachy MS1/Figures/mini_heatmap_",org,"_albert.png"),width=8,height=4)
+  ggtitle(org2)+theme(plot.title=element_text(face='bold',size=15))
+#ggsave(paste0("Figure4",fig_id,".eps"),width=7,height=4.375)
 
 
-##-------------------------------------------------------------##
-##- Table of metabs that are IMD but not ANOVA significant-----##
-line_names <- read.csv("~/Documents/iPASS/gobrachy/Data/GoBrachy_30_lines.csv",header=FALSE)
-flag_res <- gob_res$Flags #+/-1 means ANOVA sig, +/-2 means g-test sig
-gtes <- which(apply(flag_res[,-1],1,function(x)any(x>1.5)))
 
-counts <- gob_res$Full_results
-count_cols <- c(1,grep("Count",colnames(counts)))
-counts <- counts[gtes,count_cols]
-counts$Metabolites <- factor(counts$Metabolites)
-counts$Metabolites
