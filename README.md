@@ -1,5 +1,5 @@
 # metabotyping
-This repository contains the R and stan code used to perform the analysis discussed in the manuscript "Metabotyping as a Stopover in Genome-to-Phenome Mapping" by Pubudu Handakumbura et al., which is currently in revision.  Unfortunately, the data necessary to run this code is not publicly available yet, so the code is simply for reference.  We plan for the data to be available soon.  
+This repository contains the R and stan code used to perform the analysis discussed in the manuscript ["Metabotyping as a Stopover in Genome-to-Phenome Mapping" by Pubudu Handakumbura et al.](https://www.nature.com/articles/s41598-019-38483-0) published in Scientific Reports.  The data needed to run this code is available from osti.gov [here](https://www.osti.gov/biblio/1501917).
 
 The contents of the `Code` folder are as follows:
 
